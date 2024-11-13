@@ -1,0 +1,10 @@
+[package]
+name = "model"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rstar = "0.12.2"
+
+[dev-dependencies]
+mockall = "0.13.0"
