@@ -8,13 +8,6 @@ pub struct Journal {
 }
 
 impl Journal {
-    pub fn default() -> Self {
-        let mut journal = Journal {
-            pages: LinkedList::new(),
-        };
-        journal.pages.push_back(Page::default());
-        journal
-    }
     pub fn insert(&mut self, at: usize, page: Page) {
         let mut tail = self.pages.split_off(at);
         self.pages.push_back(page);
@@ -25,8 +18,19 @@ impl Journal {
         self.pages.push_back(page);
     }
 
+    pub fn remove(&mut self, at: usize) -> Option<Page> {
+        let mut tail = self.pages.split_off(at);
+        let page = tail.pop_front();
+        self.pages.append(&mut tail);
+        page
+    }
+
     pub fn len(&self) -> usize {
         self.pages.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.pages.is_empty()
     }
 
     pub fn iter(&self) -> Iter<Page> {
@@ -35,6 +39,16 @@ impl Journal {
 
     pub fn iter_mut(&mut self) -> IterMut<Page> {
         self.into_iter()
+    }
+}
+
+impl Default for Journal {
+    fn default() -> Self {
+        let mut journal = Journal {
+            pages: LinkedList::new(),
+        };
+        journal.pages.push_back(Page::default());
+        journal
     }
 }
 
@@ -69,6 +83,14 @@ mod tests {
     }
 
     #[test]
+    fn can_check_emptiness() {
+        let mut journal = Journal::default();
+        assert_eq!(journal.is_empty(), false);
+        journal.remove(0);
+        assert_eq!(journal.is_empty(), true);
+    }
+
+    #[test]
     fn can_push_back_page() {
         let mut journal = Journal::default();
         journal.push_back(Page::default());
@@ -98,7 +120,7 @@ mod tests {
         assert_eq!(journal.iter().nth(1).unwrap().len(), 1);
         assert_eq!(journal.iter().nth(2).unwrap().len(), 0);
     }
-    
+
     #[test]
     fn can_iterate_and_modify_pages() {
         let mut journal = Journal::default();

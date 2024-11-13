@@ -1,8 +1,8 @@
 use crate::{Element, Point};
 
-use rstar::{Envelope, RTree, RTreeObject, SelectionFunction, AABB};
 use crate::elements::timed_element::TimedElement;
 use crate::iterator::SelectionIter;
+use rstar::{Envelope, RTree, RTreeObject, SelectionFunction, AABB};
 
 #[derive(Default)]
 pub struct Page {
@@ -10,10 +10,11 @@ pub struct Page {
     t_index: u128,
 }
 
-impl<'a> Page {
+impl Page {
     pub fn insert<T: Element + 'static>(&mut self, element: T, z_index: i32) {
         self.t_index += 1;
-        self.elements.insert(TimedElement::new(element, z_index, self.t_index));
+        self.elements
+            .insert(TimedElement::new(element, z_index, self.t_index));
     }
 
     pub fn iter(&self) -> SelectionIter {
@@ -35,6 +36,10 @@ impl<'a> Page {
 
     pub fn len(&self) -> usize {
         self.elements.size()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.elements.size() == 0
     }
 }
 
@@ -71,13 +76,12 @@ where
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use std::ops::Deref;
     use super::*;
     use crate::elements::rectangle::Rectangle;
     use crate::{Line, Point};
+    use std::ops::Deref;
 
     #[test]
     fn add_element() {
@@ -100,10 +104,7 @@ mod tests {
         let element = Rectangle::new(lower, upper);
         page.insert(element, 15);
 
-        let rect = page
-            .iter()
-            .next()
-            .unwrap();
+        let rect = page.iter().next().unwrap();
         assert_eq!(rect.z_index(), 15);
     }
 
@@ -118,7 +119,10 @@ mod tests {
         let selector = SelectByAddressFunction::new(stored_line.envelope(), stored_line);
         let extracted_line = page.extract(selector).unwrap();
         assert_eq!(page.len(), 0);
-        assert_eq!(*extracted_line.deref().downcast_ref::<Line>().unwrap(), line);
+        assert_eq!(
+            *extracted_line.deref().downcast_ref::<Line>().unwrap(),
+            line
+        );
     }
 
     #[test]
@@ -147,10 +151,37 @@ mod tests {
         page.insert(line_inside.clone(), 0);
 
         // When selecting elements
-        let mut selection = page.locate_in_envelope(AABB::from_corners((2, 4).into(), (7, 8).into()));
+        let mut selection =
+            page.locate_in_envelope(AABB::from_corners((2, 4).into(), (7, 8).into()));
 
         // Then we get the elements that are on the boundary and within the selection envelope
-        assert_eq!(selection.next().unwrap().downcast_ref::<Line>().unwrap(), &line_inside);
-        assert_eq!(selection.next().unwrap().downcast_ref::<Line>().unwrap(), &line_on_boundary);
+        assert_eq!(
+            selection.next().unwrap().downcast_ref::<Line>().unwrap(),
+            &line_inside
+        );
+        assert_eq!(
+            selection.next().unwrap().downcast_ref::<Line>().unwrap(),
+            &line_on_boundary
+        );
+    }
+
+    #[test]
+    fn can_get_len() {
+        let mut page = Page::default();
+        assert_eq!(page.len(), 0);
+        let points = vec![(1, 2), (2, 3)];
+        let line = Line::from_iter(points.iter());
+        page.insert(line.clone(), 0);
+        assert_eq!(page.len(), 1);
+    }
+
+    #[test]
+    fn can_check_emptiness() {
+        let mut page = Page::default();
+        assert_eq!(page.is_empty(), true);
+        let points = vec![(1, 2), (2, 3)];
+        let line = Line::from_iter(points.iter());
+        page.insert(line.clone(), 0);
+        assert_eq!(page.is_empty(), false);
     }
 }
