@@ -13,16 +13,6 @@ pub struct Line {
 }
 
 impl Line {
-    pub fn from_iter<T, P>(points: T) -> Self
-    where
-        P: Into<Point>,
-        T: IntoIterator<Item=P> + Iterator<Item=P>,
-    {
-        Line {
-            points: LinkedList::from_iter(points.map(|p| -> Point { p.into() }).into_iter()),
-        }
-    }
-
     pub fn push_back(&mut self, point: Point) {
         self.points.push_back(point);
     }
@@ -36,10 +26,14 @@ impl Line {
     }
 }
 
-impl FromIterator<Point> for Line {
-    fn from_iter<T: IntoIterator<Item=Point>>(points: T) -> Self
-    {
-        Line::from_iter(points.into_iter())
+impl<P> FromIterator<P> for Line
+where
+    P: Into<Point>,
+{
+    fn from_iter<T: IntoIterator<Item = P>>(points: T) -> Self {
+        Line {
+            points: LinkedList::from_iter(points.into_iter().map(|p| -> Point { p.into() })),
+        }
     }
 }
 
@@ -121,7 +115,6 @@ mod tests {
         assert_eq!(line.envelope().upper(), (0, 0));
     }
 
-
     #[test]
     fn correct_filled_envelope() {
         let points = vec![(5, 7), (1, 2)];
@@ -152,7 +145,7 @@ mod tests {
         assert_eq!(*iter.next().unwrap(), (2, 1));
         assert!(iter.next().is_none());
     }
-    
+
     #[test]
     fn can_cast_to_any() {
         let points = vec![(5, 7), (4, 3), (2, 1)];
